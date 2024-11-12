@@ -1,1 +1,4 @@
 ---
+- name: Check if a group exists on Windows server
+  hosts: windows_servers  # Define the group of Windows servers in your inventory
+  gather_facts: no
