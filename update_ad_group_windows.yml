@@ -1,4 +1,7 @@
 ---
-- name: Check if a group exists on Windows server
-  hosts: windows_servers  # Define the group of Windows servers in your inventory
+- name: Update AD groups information on Windows
+  hosts: "{{ target }}" #Define the group of Windows servers in your inventory
+  #become: true
   gather_facts: no
+  roles:
+    - ad_group_update_windows
