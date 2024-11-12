@@ -13,7 +13,6 @@
      path: "./old_group_status.txt"
      line: "{{ inventory_hostname }}: {{ old_group_exists }}"
      create: yes
-  delegate_to: localhost
 - name: Load old group status data
   include_vars:
     file: "{{ old_group_status_file }}"
@@ -39,7 +38,7 @@
   set_fact:
     new_group_exists: "{{ new_group_check.rc == 0 }}"
     
-- name: Delete old group if new group exists
+- name: Delete old group
   win_command: net localgroup "{{ old_group_name }} /delete"
   when: new_group_exists
   register: old_group_delete
