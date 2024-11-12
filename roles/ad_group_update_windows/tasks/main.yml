@@ -22,7 +22,7 @@
      add_new_group: "{{ old_group_status[inventory_hostname] | default(false) }}"
 - name: Add new group 
   win_command: net localgroup "{{ new_group_name }} /add"
-  when: add_new_group
+  when: action_type == "Add"
   register: new_group_add
   changed_when: new_group_add.rc == 0
 
@@ -31,6 +31,7 @@
      msg: >
        "New group '{{ new_group_name }}' was {{ 'added' if new_group_add is defined and new_group_add.rc == 0 else 'already present or not required' }} 
         on {{ inventory_hostname }}."
+        
 - name: Check if the new group exists
   win_command: net localgroup "{{ new_group_name }}"
   register: new_group_check
@@ -40,7 +41,7 @@
     
 - name: Delete old group
   win_command: net localgroup "{{ old_group_name }} /delete"
-  when: new_group_exists
+  when: action_type == "delete"
   register: old_group_delete
   changed_when: old_group_delete.rc == 0
 
