@@ -1,5 +1,5 @@
 ---
-- name: Check if the old group exists
+- name: Check if the old group exists      #check old group 
   win_command: net localgroup "{{ old_group_name }}"
   register: old_group_check
   #ignore_errors: yes
@@ -14,3 +14,39 @@
      line: "{{ inventory_hostname }}: {{ old_group_exists }}"
      create: yes
   delegate_to: localhost
+- name: Load old group status data
+  include_vars:
+    file: "{{ old_group_status_file }}"
+    name: old_group_status
+- name: Check if this server should have the new group added
+  set_fact:
+     add_new_group: "{{ old_group_status[inventory_hostname] | default(false) }}"
+- name: Add new group 
+  win_command: net localgroup "{{ new_group_name }} /add"
+  when: add_new_group
+  register: new_group_add
+  changed_when: new_group_add.rc == 0
+
+- name: Report on new group creation
+  debug:
+     msg: >
+       "New group '{{ new_group_name }}' was {{ 'added' if new_group_add is defined and new_group_add.rc == 0 else 'already present or not required' }} 
+        on {{ inventory_hostname }}."
+- name: Check if the new group exists
+  win_command: net localgroup "{{ new_group_name }}"
+  register: new_group_check
+- name: Set fact based on new group existence status
+  set_fact:
+    new_group_exists: "{{ new_group_check.rc == 0 }}"
+    
+- name: Delete old group if new group exists
+  win_command: net localgroup "{{ old_group_name }} /delete"
+  when: new_group_exists
+  register: old_group_delete
+  changed_when: old_group_delete.rc == 0
+
+- name: Report on old group deletion
+  debug:
+    msg: >
+        "Old group '{{ old_group_name }}' was {{ 'deleted' if old_group_delete is defined and old_group_delete.rc == 0 else 'not present or deletion not required' }}
+        on {{ inventory_hostname }}."
