@@ -1,0 +1,16 @@
+---
+- name: Check if the old group exists
+  win_command: net localgroup "{{ old_group_name }}"
+  register: old_group_check
+  #ignore_errors: yes
+
+- name: Set fact for old group existence
+  set_fact:
+    old_group_exists: "{{ old_group_check.rc == 0 }}"
+
+- name: Save old group existence result for each server
+  lineinfile:
+     path: "./old_group_status.txt"
+     line: "{{ inventory_hostname }}: {{ old_group_exists }}"
+     create: yes
+  delegate_to: localhost
