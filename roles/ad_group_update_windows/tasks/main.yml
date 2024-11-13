@@ -1,14 +1,12 @@
 ---
-- name: Check if the old group exists      #check old group 
+- name: Check if the old group exists      #check old group----
   win_command: net localgroup "{{ old_group_name }}"
   register: old_group_check
   #ignore_errors: yes
-
 - name: Set fact for old group existence
   set_fact:
     old_group_exists: "{{ old_group_check.rc == 0 }}"
-
-- name: Save old group existence result for each server
+- name: Save old group status result for each server
   lineinfile:
      path: "./old_group_status.txt"
      line: "{{ inventory_hostname }}: {{ old_group_exists }}"
@@ -22,10 +20,9 @@
      add_new_group: "{{ old_group_status[inventory_hostname] | default(false) }}"
 - name: Add new group 
   win_command: net localgroup "{{ new_group_name }} /add"
-  when: action_type == "Add"
+  when: action_type == "Add" and add_new_group
   register: new_group_add
   changed_when: new_group_add.rc == 0
-
 - name: Report on new group creation
   debug:
      msg: >
@@ -41,7 +38,7 @@
     
 - name: Delete old group
   win_command: net localgroup "{{ old_group_name }} /delete"
-  when: action_type == "delete"
+  when: action_type == "delete" and old_group_exists
   register: old_group_delete
   changed_when: old_group_delete.rc == 0
 
