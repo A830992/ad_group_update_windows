@@ -58,3 +58,15 @@
       {% endif %}
       New Group '{{ new_group_name }}' Added: {{ new_group_added | default(false) }}
       New Group '{{ new_group_name }}' Exists: {{ new_group_exists }}
+  
+- name: Output the report to con
+  when: action_type == "report"
+  debug:
+    msg: "Report "{{ report_data }}" created successfully"
+    
+- name: Save report to localhost file
+  when: action_type == "report"
+  copy:
+    content: "{{ report_data }}"
+    dest: "./reports/{{ inventory_hostname }}_report.txt"
+  delegate_to: localhost
