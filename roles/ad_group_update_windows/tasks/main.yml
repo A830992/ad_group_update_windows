@@ -44,4 +44,17 @@
     msg: "Old group "{{ old_group_name }}" deleted successfully"
   when: old_group_delete.changed
 
-  
+#Report
+- name: Create report for target servers
+  when: action_type == "report"
+  set_fact:
+    report_data: |
+      Server Name: {{ inventory_hostname }}
+      Old Group '{{ old_group_name }}' Exists: {{ old_group_exists }}
+      {% if not old_group_exists %}
+      Old Group '{{ old_group_name }}' does not exist.
+      {% else %}
+      Old Group '{{ old_group_name }}' was deleted.
+      {% endif %}
+      New Group '{{ new_group_name }}' Added: {{ new_group_added | default(false) }}
+      New Group '{{ new_group_name }}' Exists: {{ new_group_exists }}
