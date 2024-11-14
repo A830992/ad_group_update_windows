@@ -2,49 +2,37 @@
 - name: Check if the old group exists      #check old group----
   win_command: net localgroup "{{ old_group_name }}"
   register: old_group_check
-  #ignore_errors: yes
+  ignore_errors: yes
 - name: Set fact for old group existence
   set_fact:
     old_group_exists: "{{ old_group_check.rc == 0 }}"
-- name: Save old group status result for each server
-  lineinfile:
-     path: "./old_group_status.txt"
-     line: "{{ inventory_hostname }}: {{ old_group_exists }}"
-     create: yes
-- name: Load old group status data
-  include_vars:
-    file: "{{ old_group_status_file }}"
-    name: old_group_status
 - name: Check if this server should have the new group added
   set_fact:
      add_new_group: "{{ old_group_status[inventory_hostname] | default(false) }}"
 - name: Add new group 
-  win_command: net localgroup "{{ new_group_name }} /add"
-  when: action_type == "Add" and add_new_group
+  win_command: net localgroup "{{ new_group_name }}" /add
+  when: action_type == "Add"
   register: new_group_add
   changed_when: new_group_add.rc == 0
 - name: check status on new group addition
   debug:
-     msg: >
-       "New group '{{ new_group_name }}' was {{ 'added' if new_group_add is defined and new_group_add.rc == 0 else 'already present or not required' }} 
-        on {{ inventory_hostname }}."
-        
+    msg: "new group "{{ new_group_name }}"  added successfully"
+  when: new_group_add.changed
+  
 - name: Check if the new group exists
   win_command: net localgroup "{{ new_group_name }}"
   register: new_group_check
+  
 - name: Set fact based on new group existence status
   set_fact:
     new_group_exists: "{{ new_group_check.rc == 0 }}"
     
 - name: Delete old group
-  win_command: net localgroup "{{ old_group_name }} /delete"
-  when: action_type == "delete" and old_group_exists
+  win_command: net localgroup "{{ old_group_name }}" /delete
+  when: action_type == "delete"
   register: old_group_delete
   changed_when: old_group_delete.rc == 0
-
-- name: check status on old group deletion
+- name: check status on new group addition
   debug:
-    msg: >
-        "Old group '{{ old_group_name }}' was {{ 'deleted' if old_group_delete is defined and old_group_delete.rc == 0 else 'not present or deletion not required' }}
-        on {{ inventory_hostname }}."
-        
+    msg: "Old group "{{ old_group_name }}" deleted successfully"
+  when: old_group_delete.changed
