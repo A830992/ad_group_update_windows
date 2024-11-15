@@ -67,6 +67,23 @@
     line: "{{ report_data }}"
     create: yes
     insertafter: EOF
+
+# Send email with the report as an attachment
+- name: Send report via email
+  when: action_type == "report"
+  mail:
+    host:   # SMTP server address (change to your mail server)
+    port:  # SMTP port 
+    username: "your-email@example.com"  # email address
+    password: "your-email-password"  # email password 
+    to: "recipient@example.com"  # Recipient email address
+    subject: "AD Group Naming Report"
+    body: "Hello, \n\nPlease find attached the report for group actions performed on servers.
+    attach:
+      - "{{ report_file_path }}"  # Path to the generated CSV file
+    secure: yes  # Use SSL/TLS for secure connection
+  delegate_to: localhost
+
 - name: Output report to console
   when: action_type == "report"
   debug:
