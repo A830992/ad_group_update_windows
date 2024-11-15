@@ -1,4 +1,5 @@
 ---
 old_group_name: "OldGroupName" 
 new_group_name: "newgroupdname"
-old_group_status_file: "./old_group_status.txt" 
+report_file_path: "./group_report.csv"
+  destination_path: "C:/Reports" 
