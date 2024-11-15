@@ -43,43 +43,31 @@
   debug:
     msg: "Old group "{{ old_group_name }}" deleted successfully"
   when: old_group_delete.changed
-
-# Report Playbook
-
-- name: Create report for target servers
+##report
+- name: Create report data for target servers
   when: action_type == "report"
-  set_fact:
-    report_data: |
-      Server Name: {{ inventory_hostname }}
-      Old Group '{{ old_group_name }}' Exists: {{ old_group_exists }}
-      {% if not old_group_exists %}
-      Old Group '{{ old_group_name }}' does not exist.
-      {% else %}
-      Old Group '{{ old_group_name }}' was deleted.
-      {% endif %}
-      New Group '{{ new_group_name }}' Added: {{ new_group_added | default(false) }}
-      New Group '{{ new_group_name }}' Exists: {{ new_group_exists }}
+    set_fact:
+      report_data: |
+        {{ inventory_hostname }},{{ old_group_exists }},{{ 'Does not exist' if not old_group_exists else 'Deleted' }},{{ new_group_add.changed | default(false) }},{{ new_group_exists }}
 
-- name: Ensure CSV header exists
+- name: Ensure header exists at the beginning of the CSV file
   when: action_type == "report"
-  delegate_to: localhost
+  elegate_to: localhost
   lineinfile:
-    path: "group_report.csv"
+    path: "{{ report_file_path }}"
     line: "Server Name,Old Group Exists,Old Group Deletion Status,New Group Added,New Group Exists"
     create: yes
     insertafter: BOF
-
-- name: Append report data to CSV file
+    
+- name: check report data for each server to the CSV file
   when: action_type == "report"
   delegate_to: localhost
   lineinfile:
-    path: "group_report.csv"
-    line: "{{ inventory_hostname }},{{ old_group_exists }},{{ 'Does not exist' if not old_group_exists else 'Deleted' }},{{ new_group_added | default(false) }},{{ new_group_exists }}"
+    path: "{{ report_file_path }}"
+    line: "{{ report_data }}"
     create: yes
     insertafter: EOF
-
-- name: Output the report 
+- name: Output report to console
   when: action_type == "report"
   debug:
-    msg: "Report '{{ report_data }}' created successfully"
-
+    msg: "Report entry for {{ inventory_hostname }}: {{ report_data }}"
