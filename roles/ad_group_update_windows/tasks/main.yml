@@ -43,48 +43,46 @@
   debug:
     msg: "Old group "{{ old_group_name }}" deleted successfully"
   when: old_group_delete.changed
-##report
-- name: Create report data for target servers
+  
+##repor
+- name: Create and save report for target servers
   when: action_type == "report"
-    set_fact:
-      report_data: |
-        {{ inventory_hostname }},{{ old_group_exists }},{{ 'Does not exist' if not old_group_exists else 'Deleted' }},{{ new_group_add.changed | default(false) }},{{ new_group_exists }}
+  block:
+    - name: Create report data for target servers
+      set_fact:
+        report_data: |
+          {{ inventory_hostname }},{{ old_group_name }},
+          {{ 'Yes' if old_group_exists else 'No' }},
+          {{ 'Yes' if new_group_add.changed | default(false) else 'No' }},
+          {{ 'Yes' if new_group_exists else 'No' }}
 
-- name: Ensure header exists at the beginning of the CSV file
-  when: action_type == "report"
-  elegate_to: localhost
-  lineinfile:
-    path: "{{ report_file_path }}"
-    line: "Server Name,Old Group Exists,Old Group Deletion Status,New Group Added,New Group Exists"
-    create: yes
-    insertafter: BOF
-    
-- name: check report data for each server to the CSV file
-  when: action_type == "report"
-  delegate_to: localhost
-  lineinfile:
-    path: "{{ report_file_path }}"
-    line: "{{ report_data }}"
-    create: yes
-    insertafter: EOF
+    - name: Ensure header exists at the beginning of the CSV file
+      delegate_to: localhost
+      lineinfile:
+        path: "/repo/REPORT/ADGroup/{{ report_file_path }}"
+        line: "Server Name,Old Group Name,Old Group Exists,New Group Added,New Group Exists"
+        create: yes
+        insertafter: BOF
 
-# Send email with the report as an attachment
-- name: Send report via email
-  when: action_type == "report"
-  mail:
-    host:   # SMTP server address (change to your mail server)
-    port:  # SMTP port 
-    username: "your-email@example.com"  # email address
-    password: "your-email-password"  # email password 
-    to: "recipient@example.com"  # Recipient email address
-    subject: "AD Group Naming Report"
-    body: "Hello, \n\nPlease find attached the report for group actions performed on servers.
-    attach:
-      - "{{ report_file_path }}"  # Path to the generated CSV file
-    secure: yes  # Use SSL/TLS for secure connection
-  delegate_to: localhost
+    - name: Check and add report data for each server to the CSV file
+      delegate_to: localhost
+      lineinfile:
+        path: "/repo/REPORT/ADGroup/{{ report_file_path }}"
+        line: "{{ report_data }}"   # Append the report data for each server
+        create: yes
+        insertafter: EOF
 
-- name: Output report to console
-  when: action_type == "report"
-  debug:
-    msg: "Report entry for {{ inventory_hostname }}: {{ report_data }}"
+    - name: Send report via email
+      delegate_to: localhost
+      mail:
+        host: "smtp.yourserver.com"  
+        port: 25                   
+        to: "shubhangi.joshi@atos.net"
+        subject: "AD Group Naming Report"
+        body: "Hello, \n\nPlease find attached the report for group actions performed on servers."
+        attach:
+          - "/repo/REPORT/ADGroup/{{ report_file_path }}" 
+    - name: Output report to console
+      debug:
+        msg: "Report entry for {{ inventory_hostname }}: {{ report_data }}"
+
