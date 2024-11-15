@@ -44,7 +44,8 @@
     msg: "Old group "{{ old_group_name }}" deleted successfully"
   when: old_group_delete.changed
 
-#Report
+# Report Playbook
+
 - name: Create report for target servers
   when: action_type == "report"
   set_fact:
@@ -58,15 +59,27 @@
       {% endif %}
       New Group '{{ new_group_name }}' Added: {{ new_group_added | default(false) }}
       New Group '{{ new_group_name }}' Exists: {{ new_group_exists }}
-  
-- name: Output the report to con
+
+- name: Ensure CSV header exists
+  when: action_type == "report"
+  delegate_to: localhost
+  lineinfile:
+    path: "group_report.csv"
+    line: "Server Name,Old Group Exists,Old Group Deletion Status,New Group Added,New Group Exists"
+    create: yes
+    insertafter: BOF
+
+- name: Append report data to CSV file
+  when: action_type == "report"
+  delegate_to: localhost
+  lineinfile:
+    path: "group_report.csv"
+    line: "{{ inventory_hostname }},{{ old_group_exists }},{{ 'Does not exist' if not old_group_exists else 'Deleted' }},{{ new_group_added | default(false) }},{{ new_group_exists }}"
+    create: yes
+    insertafter: EOF
+
+- name: Output the report 
   when: action_type == "report"
   debug:
-    msg: "Report "{{ report_data }}" created successfully"
-    
-- name: Save report to localhost file
-  when: action_type == "report"
-  copy:
-    content: "{{ report_data }}"
-    dest: "./reports/{{ inventory_hostname }}_report.txt"
-  delegate_to: localhost
+    msg: "Report '{{ report_data }}' created successfully"
+
